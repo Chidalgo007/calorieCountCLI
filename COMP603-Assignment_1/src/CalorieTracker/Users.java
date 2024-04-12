@@ -4,6 +4,8 @@
  */
 package CalorieTracker;
 
+import FileIO.File_IO;
+
 /**
  *
  * @author chg
@@ -16,6 +18,7 @@ public class Users {
     public Users(String name, int id) {
         userName = name;
         userId = id;
+        new File_IO(userName, id);
     }
 
     /**

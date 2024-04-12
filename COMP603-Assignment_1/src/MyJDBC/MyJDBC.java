@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 /**
  *
@@ -22,30 +24,38 @@ import java.util.logging.Logger;
  */
 public class MyJDBC {
 
-    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/calorietracker";
-    private static final String DB_USERNAME = "root";
-    private static final String DB_PASSWORD = "@.MySQL";
+    private static final String DB_URL = "jdbc:mysql://awscaloriecount.cnmqgie6ahhg.us-east-1.rds.amazonaws.com:3306/AWSCalorieCount";
+    private static final String DB_USERNAME = "PDC_Admin";
+    private static final String DB_PASSWORD = "PDC_Admin";
+
+    // FreeSQLdatabase.com
+//    private static final String DB_URL = "jdbc:mysql://sql6.freesqldatabase.com:3306/sql6697968";
+//    private static final String DB_USERNAME = "sql6697968";
+//    private static final String DB_PASSWORD = "8hxEUIgqMC";
+    // local DataBase
+//    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/calorietracker";
+//    private static final String DB_USERNAME = "root";
+//    private static final String DB_PASSWORD = "@.MySQL";
     private static final String DB_USER_TABLE_NAME = "user";
     private static final String DB_ITEMS_CALORIES = "items_";
-
+        
     // register new users
     public static boolean register(String username, String password, String name, String lastname, String email) {
         try {
             // check if user exist in the DB
             if (!checkUser(username, email)) {
-                Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
-
-                PreparedStatement insertUser = connection.prepareStatement(
-                        "INSERT INTO " + DB_USER_TABLE_NAME + "(USERNAME, PASSWORD, NAME, LASTNAME, EMAIL)" + " VALUES(?,?,?,?,?)"
-                );
-                insertUser.setString(1, username);
-                insertUser.setString(2, password);
-                insertUser.setString(3, name);
-                insertUser.setString(4, lastname);
-                insertUser.setString(5, email);
-                // update DB
-                insertUser.executeUpdate();
-
+                try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                          PreparedStatement insertUser = connection.prepareStatement(
+                                "INSERT INTO " + DB_USER_TABLE_NAME + "(USERNAME, PASSWORD, NAME, LASTNAME, EMAIL)" + " VALUES(?,?,?,?,?)"
+                        )) {
+                    insertUser.setString(1, username);
+                    insertUser.setString(2, password);
+                    insertUser.setString(3, name);
+                    insertUser.setString(4, lastname);
+                    insertUser.setString(5, email);
+                    // update DB
+                    insertUser.executeUpdate();
+                }
                 return true;
             }
         } catch (SQLException ex) {
@@ -57,8 +67,9 @@ public class MyJDBC {
 
     // check if the username or email exist in the user table before creating a new user
     private static boolean checkUser(String username, String email) {
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);  PreparedStatement checkUserExist = connection.prepareStatement(
-                " SELECT * FROM " + DB_USER_TABLE_NAME + " WHERE USERNAME = ? OR EMAIL = ?")) {
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement checkUserExist = connection.prepareStatement( //NOSONAR
+                        " SELECT * FROM " + DB_USER_TABLE_NAME + " WHERE USERNAME = ? OR EMAIL = ?")) {
 
             checkUserExist.setString(1, username);
             checkUserExist.setString(2, email);
@@ -68,8 +79,6 @@ public class MyJDBC {
                     return false;
                 }
             }
-            checkUserExist.close();
-            connection.close();
 
         } catch (SQLException ex) {
             Logger.getLogger(MyJDBC.class.getName()).log(Level.SEVERE, null, ex);
@@ -81,8 +90,9 @@ public class MyJDBC {
     // get the user id
     public static int getUserId(String username, String password) {
         int userId = -1; // default to indicate user not found
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);  PreparedStatement checkUserExist = connection.prepareStatement(
-                " SELECT * FROM " + DB_USER_TABLE_NAME + " WHERE BINARY USERNAME = ? AND BINARY PASSWORD = ?")) {
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement checkUserExist = connection.prepareStatement(
+                        " SELECT * FROM " + DB_USER_TABLE_NAME + " WHERE BINARY USERNAME = ? AND BINARY PASSWORD = ?")) {
 
             checkUserExist.setString(1, username);
             checkUserExist.setString(2, password);
@@ -110,9 +120,10 @@ public class MyJDBC {
     // Enter calories for each item in their general items table
     public static void enterCalories(String tableName, int userID, Date date, String items, int calorie) {
 
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);  PreparedStatement insertCalories = connection.prepareStatement(
-                "INSERT INTO " + DB_ITEMS_CALORIES + tableName + "(FK_USERID, DATE, ITEMS, CALORIES)" + " VALUES(?,?,?,?)"
-        )) {
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement insertCalories = connection.prepareStatement(
+                        "INSERT INTO " + DB_ITEMS_CALORIES + tableName + "(FK_USERID, DATE, ITEMS, CALORIES)" + " VALUES(?,?,?,?)"
+                )) {
 
             //  Date sqlDate = Date.valueOf(date);
             insertCalories.setInt(1, userID);
@@ -160,8 +171,7 @@ public class MyJDBC {
     }
 
     private static void totalSumPerDay(String[] ALL_MEAL_TABLE, String total) {
-        try {
-            Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
 
             // check if all table are empty
             boolean allTableEmpty = true;
@@ -216,8 +226,9 @@ public class MyJDBC {
     public static Map<String, Integer> retriveItems_details(String table, Date date, int userID) {
         Map<String, Integer> tableDetails = new LinkedHashMap<>();
 
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);  PreparedStatement checkUserExist = connection.prepareStatement(
-                " SELECT * FROM " + DB_ITEMS_CALORIES + table + " WHERE FK_USERID = ? AND DATE = ?")) {
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement checkUserExist = connection.prepareStatement(
+                        " SELECT * FROM " + DB_ITEMS_CALORIES + table + " WHERE FK_USERID = ? AND DATE = ?")) {
 
             checkUserExist.setInt(1, userID);
             checkUserExist.setDate(2, date);
@@ -248,8 +259,8 @@ public class MyJDBC {
         LocalDate localDateWeekAgo = localDate.minusDays(7);
         Date dateOneWeekAgo = Date.valueOf(localDateWeekAgo);
 
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); 
-//                PreparedStatement checkUserExist = connection.prepareStatement(
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                //                PreparedStatement checkUserExist = connection.prepareStatement(
                 //                "SELECT * FROM " + table + " WHERE FK_USERID = ? AND DATE = ?");  
                   PreparedStatement checkUserExistWithoutDate = connection.prepareStatement(
                         "SELECT * FROM " + table + " WHERE FK_USERID = ?")) {
@@ -289,8 +300,9 @@ public class MyJDBC {
 
     public static void removeLineForEditedInformation(String table, int userID, int itemsID) {
 
-        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD);  PreparedStatement deleteRow = connection.prepareStatement("DELETE FROM " + DB_ITEMS_CALORIES + table
-                + " WHERE ITEMS_ID = ? AND FK_USERID = ?")) {
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement deleteRow = connection.prepareStatement("DELETE FROM " + DB_ITEMS_CALORIES + table
+                        + " WHERE ITEMS_ID = ? AND FK_USERID = ?")) {
 
             deleteRow.setInt(1, itemsID);
             deleteRow.setInt(2, userID);
@@ -300,5 +312,86 @@ public class MyJDBC {
         } catch (SQLException ex) {
             Logger.getLogger(MyJDBC.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    // ------------------------------ FILE I/O from DB----------------------------------
+    public static JsonObject writeJsonItems(String table, int userID) {
+
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement statement = connection.prepareStatement( //NOSONAR
+                        "SELECT * FROM " + DB_ITEMS_CALORIES + table + " WHERE FK_USERID = ? ORDER BY DATE")) {
+            statement.setInt(1, userID);
+            try ( ResultSet resultSet = statement.executeQuery()) {
+
+                Map<String, JsonArray> groupItems = new LinkedHashMap<>();
+
+                while (resultSet.next()) {
+
+                    String date = resultSet.getString("date");
+
+                    JsonObject items = new JsonObject();
+                    items.addProperty("items_ID", resultSet.getString("items_ID"));
+                    items.addProperty("FK_userID", resultSet.getString("FK_userID"));
+                    items.addProperty("date", date);
+                    items.addProperty("items", resultSet.getString("items"));
+                    items.addProperty("calories", resultSet.getString("calories"));
+
+                    JsonArray dateArray = groupItems.computeIfAbsent(date, k -> new JsonArray());
+                    dateArray.add(items);
+                }
+                // convert to aajson structure
+                JsonObject jsonResult = new JsonObject();
+                JsonObject jsonTable = new JsonObject();
+                for (Map.Entry<String, JsonArray> entry : groupItems.entrySet()) {
+                    jsonTable.add(entry.getKey(), entry.getValue());
+                }
+                jsonResult.add(table, jsonTable);
+                // Write JSON data to a file
+                return jsonResult;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(MyJDBC.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+    public static JsonObject writeJsonMain(String table, int userID) {
+
+        try ( Connection connection = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD); //NOSONAR
+                  PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM " + table + " WHERE FK_USERID = ? ORDER BY DATE")) {
+            statement.setInt(1, userID);
+
+            try ( ResultSet resultSet = statement.executeQuery()) {
+                // to hold table, date, items ...
+                Map<String, JsonArray> groupTotal = new LinkedHashMap<>();
+
+                while (resultSet.next()) {
+                    String date = resultSet.getString("date");
+
+                    JsonObject items = new JsonObject();
+                    items.addProperty(table + "ID", resultSet.getString(table + "ID"));
+                    items.addProperty("userID", resultSet.getString("FK_userID"));
+                    items.addProperty("date", date);
+                    items.addProperty("calories", resultSet.getString("total"));
+
+                    JsonArray dateMap = groupTotal.computeIfAbsent(date, k -> new JsonArray());
+                    dateMap.add(items);
+                }
+                // convert to json structure
+                JsonObject jsonResults = new JsonObject();
+                JsonObject tableObj = new JsonObject();
+                for (Map.Entry<String, JsonArray> tableEntry : groupTotal.entrySet()) {
+                    tableObj.add(tableEntry.getKey(), tableEntry.getValue());
+                }
+                jsonResults.add(table, tableObj);
+                // Write JSON data to a file
+                return jsonResults;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(MyJDBC.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return null;
     }
 }

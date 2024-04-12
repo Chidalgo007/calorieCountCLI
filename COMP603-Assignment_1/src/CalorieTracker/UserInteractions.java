@@ -22,31 +22,24 @@ public class UserInteractions {
     private final Users user;
     private Date date;
     private final Scanner scan = new Scanner(System.in);
-    private RetriveInformation getInfo;
-    private EnterCalories enterInfo;
-
-    public UserInteractions() { // constructor for try out
-        user = new Users("try out", -1);
-        startLoopOptions();
-
-    }
+    private final RetriveInformation getInfo;
+    private final EnterCalories enterInfo;
+    private final EnterBurnedCalories enterCaloriesBurned;
 
     public UserInteractions(String userName, int userID) { // constructor for log in
         user = new Users(userName, userID);
         getInfo = new RetriveInformation(this);
-        enterInfo = new EnterCalories(user.getUserId());
+        enterInfo = new EnterCalories(getUser().getUserId());
+        enterCaloriesBurned = new EnterBurnedCalories(this);
         whatDoYouWantToDo();
     }
 
-    private void startLoopOptions() {
-        System.out.println("Select where to enter food calories :\n 1) Breakfast\n2) Lunch\n3) Dinner\n4) Snack");
-
+    public void startLoopOptions() {
+        System.out.println("Select meal to enter the food calories :\n 1) Breakfast\n2) Lunch\n3) Dinner\n4) Snack");
         String input = scan.nextLine().trim();
-
         if (input.equalsIgnoreCase("ESC")) {
             systemClose();
         }
-
         selectOptionCaloriesCount(input);
     }
 
@@ -84,7 +77,7 @@ public class UserInteractions {
      */
     private void enterCalories() {
         LinkedList<String> foodList = new LinkedList<>();
-        System.out.println("Enter items (e.g 500g fried Chicken), and press ENTER (type \"DONE\" to finish or ESC to exit): ");
+        System.out.println("You selected " + mealType + " Enter items (e.g 500g fried Chicken), and press ENTER (type \"DONE\" to finish or ESC to exit): ");
         while (scan.hasNext()) {
             String items = scan.nextLine();
             if (items.equalsIgnoreCase("done")) {
@@ -122,18 +115,18 @@ public class UserInteractions {
         for (String i : foodList) {
             String ing = i.replace(" ", "%20");
             int calories = fetchAPI.fetchAPISingleCalories(ing);
-            if (user.getUserId() != -1) {
+            if (getUser().getUserId() != -1) {
                 enterInfo.setItems(i, calories);
             } else {
-                System.out.println(i + " : " + calories);
+                System.out.println(i + " : " + calories + "Kcal");
             }
         }
         // print a list of the items added
         String input;
-        if (user.getUserId() != -1) {
-            enterInfo.insertCaloriesIntoDB(mealType, date);
+        if (getUser().getUserId() != -1) {
+            enterInfo.insertCaloriesIntoDB(mealType, getDate());
             enterInfo.printItems();
-            System.out.println("Do you want to add more items? \"Y\" or any to continue");
+            System.out.println("Do you want to add more items? \"Y\" or any letter to continue");
             input = scan.nextLine();
             if (input.equalsIgnoreCase("Y")) {
                 startLoopOptions();
@@ -142,7 +135,7 @@ public class UserInteractions {
             }
             WantToDoMore();
         } else {
-            System.out.println("Do you want to Register? \"Y\" or any to Exit");
+            System.out.println("Do you want to Register? \"Y\" or any letter to Exit");
             input = scan.nextLine();
             if (input.equalsIgnoreCase("Y")) {
                 LoginOregister.userRegister(); // call register
@@ -157,7 +150,7 @@ public class UserInteractions {
     // ------------------- user interactions ----------------------------------
     public void WantToDoMore() {
         String input;
-        System.out.println("Do you want to do something else? \"Y\" or any to Exit");
+        System.out.println("Do you want to do something else? \"Y\" or any letter to Exit");
         input = scan.nextLine();
         if (input.equalsIgnoreCase("Y")) {
             whatDoYouWantToDo(); // restart options
@@ -172,7 +165,8 @@ public class UserInteractions {
         System.out.println("What do you want to do today \n"
                 + "---------------------------------------");
         System.out.println("1) Enter Food Calories \n2) View your current Calories"
-                + "\n3) Edit current calories \n4) Exit.");
+                + "\n3) Edit consumed calories \n4) Enter Burned Calories "
+                + "\n5) View your Burned Calories \n6) Exit.");
 
         String input = scan.nextLine();
 
@@ -198,28 +192,33 @@ public class UserInteractions {
 
                 selectDate(); // select day to enter information
                 System.out.printf("\n==================\n"
-                        + "This are the calories for %s \n", date.toString());
+                        + "This are the calories for %s \n", getDate().toString());
                 //   MyJDBC.sumDailyCalories();
                 MyJDBC.sumDailyCalories();
-                getInfo.callCalorieRetrive(date, user.getUserId());
+                getInfo.callCalorieRetrive(getDate(), getUser().getUserId());
 
                 break;
             case "3":
-                System.out.println("You selected \"Edit calorie Entered\"");
+                System.out.println("You selected \"Edit consumed calorie Entered\"");
                 System.out.println("Please select which date you want to edit your calories : \n1) Today\n2) Other date");
 
                 selectDate(); // select day to enter information
-                getInfo.editCalories(date, user.getUserId());
+                getInfo.editCalories(getDate(), getUser().getUserId());
 
                 break;
-//            case "4":
-//                System.out.println("You selected \"Enter calorie Burned\"");
-//                System.out.println("Please select which date you want to enter calories burned : \n1) Today\n2) Other date");
-//
-//                selectDate(); // select day to enter information
-//                //enter calories burned
-//                break;
             case "4":
+                System.out.println("You selected \"Enter Burned Calories\"");
+                System.out.println("Please select which date you want to enter calories burned : \n1) Today\n2) Other date");
+
+                selectDate(); // select day to enter information
+                enterCaloriesBurned.enterBurnedCalories(scan);
+                break;
+            case "5":
+                System.out.println("You selected \"View your Burned Calories\"");
+                ViewBurnedCalories.printWeeklyCalories();
+                WantToDoMore();
+                break;
+            case "6":
                 System.exit(0);
                 break;
             default:
@@ -228,7 +227,7 @@ public class UserInteractions {
         }
     }
 
-    private void selectDate() {
+    public void selectDate() {
 
         while (true) {
             String input = scan.nextLine().trim().toLowerCase();
@@ -257,7 +256,7 @@ public class UserInteractions {
                     try {
                         date = Date.valueOf(inputDate);
 
-                        if (date.toLocalDate().isBefore(LocalDate.now())) {
+                        if (getDate().toLocalDate().isBefore(LocalDate.now())) {
                             // date have right format and is before today
                             break;
                         } else {
@@ -272,10 +271,10 @@ public class UserInteractions {
                 System.out.println("Invalid input. Please enter 1 or 2");
             }
         }
-        System.out.println("Selected date: " + date);
+        System.out.println("Selected date: " + getDate());
     }
 
-    private void systemClose() {
+    public void systemClose() {
         scan.close();
         System.exit(0);
     }
@@ -285,13 +284,24 @@ public class UserInteractions {
         while (true) {
             System.out.println("Select option to edit (e.g. breakfast - 12)");
             String input = scan.nextLine();
-            String[] inputSplit = input.split("-");
-            String table = inputSplit[0].trim();
+            if (input.equalsIgnoreCase("ESC")) {
+                systemClose();
+                return;
+            }
+            String inputClean = input.replaceAll("[~!@#$%^&*()_+`{}:\"/?.>,<]", " ");
+            String[] inputSplit = inputClean.split("\\s+");
+
+            if (inputSplit.length != 2) {
+                System.out.println("Invalid input, please provide e.g dinner - 2");
+                continue;
+            }
+
+            String table = inputSplit[0].trim().toLowerCase();
             int itemID = Integer.parseInt(inputSplit[1].trim());
 
             if (input.equalsIgnoreCase("ESC")) {
                 systemClose();
-                break;
+                return;
             } else if (table.equalsIgnoreCase("BREAKFAST")
                     || table.equalsIgnoreCase("LUNCH")
                     || table.equalsIgnoreCase("DINNER")
@@ -301,7 +311,23 @@ public class UserInteractions {
                 mealType = table;
                 enterCalories();
                 break;
+            } else {
+                System.out.println("Invalid input, please provide e.g snack - 4");
             }
         }
+    }
+
+    /**
+     * @return the date
+     */
+    public Date getDate() {
+        return date;
+    }
+
+    /**
+     * @return the user
+     */
+    public Users getUser() {
+        return user;
     }
 }

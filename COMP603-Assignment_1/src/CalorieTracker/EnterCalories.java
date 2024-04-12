@@ -4,18 +4,17 @@
  */
 package CalorieTracker;
 
+import FileIO.File_IO;
 import MyJDBC.MyJDBC;
 import java.sql.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- *
  * @author chg
  *this class manage the insertion of information into the DB
- *
  */
-class EnterCalories {
+public class EnterCalories {
 
     private final LinkedHashMap<String, Integer> items;
     private final int userID;
@@ -56,6 +55,8 @@ class EnterCalories {
             }
         }
         items.clear();
+        System.out.println("Sorry for the delay, I am writing into a file...");
+        File_IO.writeFromDBtoFile();
     }
 
     public void removeLineForEditedInformation(String table,int itemsID ){

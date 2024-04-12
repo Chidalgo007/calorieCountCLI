@@ -6,6 +6,9 @@ package LoginOregister;
 
 import MyJDBC.MyJDBC;
 import CalorieTracker.UserInteractions;
+import FileIO.File_IO;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -56,16 +59,20 @@ public class LoginOregister {
     }
 
     public static void userRegister() {
+        Map<String, String> users = new LinkedHashMap<>();
+        
         try ( Scanner scan = new Scanner(System.in)) {
             System.out.println("This is the User Registration");
             System.out.println("-----------------------------");
             System.out.println("Enter an UserName: ");
             String username = scan.nextLine();
+            users.put("username", username);
             if (username.equalsIgnoreCase("ESC")) {
                 System.exit(0);
             }
             System.out.println("Enter your Password min 6 character length: ");
             String password = scan.nextLine();
+            users.put("password", password);
             if (password.equalsIgnoreCase("ESC")) {
                 System.exit(0);
             }
@@ -76,16 +83,19 @@ public class LoginOregister {
             }
             System.out.println("Enter your Name: ");
             String name = scan.nextLine();
+            users.put("First name", name);
             if (name.equalsIgnoreCase("ESC")) {
                 System.exit(0);
             }
             System.out.println("Enter your Last Name: ");
             String lastName = scan.nextLine();
+            users.put("Last name", lastName);
             if (lastName.equalsIgnoreCase("ESC")) {
                 System.exit(0);
             }
             System.out.println("Enter your email: ");
             String email = scan.nextLine();
+            users.put("email", email);
             if (email.equalsIgnoreCase("ESC")) {
                 System.exit(0);
             }
@@ -93,12 +103,12 @@ public class LoginOregister {
                 if (MyJDBC.register(username, password, name, lastName, email)) {
                     System.out.println("registration successfully!");
                     System.out.println("==========================");
+                    File_IO.usersLoggins(users);
                     logIn();
                 } else {
                     System.out.println("Username already taken try again!");
                     userRegister();
                 }
-
             } else {
                 userRegister();
             }
@@ -110,6 +120,10 @@ public class LoginOregister {
     private static boolean validLoginInput(String username, String password, String rePassword, String name, String lastname, String email) {
         if (username.length() == 0 || password.length() == 0 || name.length() == 0 || lastname.length() == 0 || email.length() == 0) {
             System.out.println("Please complete all Inputs");
+            return false;
+        }
+        if (name.matches(".*[\\s/!@#$%^&*()_+{}\":?><~`\\d].*")||lastname.matches(".*[\\s/!@#$%^&*()_+{}\":?><~`\\d].*")){
+            System.out.println("The Name and Last Name can only contains letter, no symbols or special character");
             return false;
         }
         if (password.length() < 6) {

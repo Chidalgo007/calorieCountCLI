@@ -41,7 +41,27 @@ public class RetriveInformation {
                 + "-----------------------------------------------");
         System.out.println(weekly);
         System.out.println("===============================\n");
+        calories();
+        System.out.println("-----------------------------------------------"
+                + "-----------------------------------------------");
         userInteractions.WantToDoMore();
+    }
+
+    private void calories() {
+        ViewBurnedCalories.getWeekCalories();
+        int calorieBurned = ViewBurnedCalories.getSumWeeklyCal();
+        System.out.println("Your Calories Burned this week " + calorieBurned);
+        System.out.println("===============================");
+        int diff = calorieBurned - weeklyCal;
+        if (diff > 0) {
+            float weight = diff / 7000.0f;
+            System.out.printf("Your have a calorie deficit of %d calories this week.%n", diff);
+            System.out.printf("at this rhythm you should lose %.2f kg of weight this week%n", weight);
+            } else if(diff < 0) {
+                float weight = -diff / 7000.0f;
+            System.out.printf("Your have a calorie surplus of %d calories this week.%n", diff);
+            System.out.printf("at this rhythm you should gain %.2f kg of weight this week%n", weight);           
+            } 
     }
 
     private void retriveItems_details(String table, Date date, int userID) {
@@ -83,6 +103,7 @@ public class RetriveInformation {
         weeklyCal = 0;
         dayTotalMeal = 0;
         String firstDate = "";
+        String endDate="";
         LocalDate currentDate = date.toLocalDate();
         int daysMinus = currentDate.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue();
         if (daysMinus == 0) {
@@ -93,11 +114,23 @@ public class RetriveInformation {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             LocalDate itemDate = LocalDate.parse(entry.getKey());
             int calTotal = entry.getValue();
-            if (!itemDate.isBefore(oneWeekAgo) && itemDate.isBefore(currentDate)) {
-                weeklyCal += calTotal;
-                if (firstDate.isEmpty()) {
-                    firstDate = itemDate.toString();
+
+            if (daysMinus == 7) {
+                if (!itemDate.isBefore(oneWeekAgo) && itemDate.isBefore(currentDate)) {
+                    weeklyCal += calTotal;
+                    if (firstDate.isEmpty()) {
+                        firstDate = itemDate.toString();
+                    }
                 }
+                endDate = currentDate.minusDays(1).toString();
+            } else {
+                if (!itemDate.isBefore(oneWeekAgo)) {
+                    weeklyCal += calTotal;
+                    if (firstDate.isEmpty()) {
+                        firstDate = itemDate.toString();
+                    }
+                }
+                endDate = currentDate.toString();
             }
             if (itemDate.isEqual(currentDate)) {
                 dayTotalMeal = calTotal;
@@ -107,14 +140,14 @@ public class RetriveInformation {
         this store the weekly information from the monday proximo at the date requested
         if the date requested is monday, it should shown monday to sunday of the previous week
          */
-        String endDate = currentDate.minusDays(1).toString();
-
-        if(table.equalsIgnoreCase("totals")){
-        str2 = "===============================\n\t\tTotal for this week "+weeklyCal+" Kcal";
-        }else{
-        str2 = "\tfrom " + firstDate + " to " + endDate + " : " + weeklyCal + " Kcal\n";
-        }
         
+
+        if (table.equalsIgnoreCase("totals")) {
+            str2 = "===============================\n\t\tTotal for this week " + weeklyCal + " Kcal";
+        } else {
+            str2 = "\tfrom " + firstDate + " to " + endDate + " : " + weeklyCal + " Kcal\n";
+        }
+
     }
 
     // retreive the information for the user to select and delete
